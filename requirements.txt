@@ -1,0 +1,14 @@
+cryptography==2.7
+Cython==0.29.13
+pyOpenSSL==19.0.0
+brotli==1.0.7
+protobuf==3.9.1
+ipaddr==2.2.0
+keyring==19.1.0
+lxml==4.4.1
+mock==3.0.5
+numpy==1.17.1
+ordereddict==1.1
+simplejson==3.16.0
+usercustomize==1.0.0
+wincertstore==0.2
