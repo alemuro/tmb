@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tmb",
-    version="0.0.1",
+    version="0.0.3",
     author="alemuro",
     author_email="hola@aleixmurtra.com",
     description="Library that interacts with TMB API",
@@ -19,7 +19,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.5',
-    install_requires=['requests', 'json'],
+    python_requires='>=3.6',
+    install_requires=['requests'],
     keywords='tmb transports metropolitans barcelona tren metro bus',
 )
