@@ -15,6 +15,7 @@ class IBus():
         """ Get remaining minutes for next bus for a given stop """
         url = f"{TMB_BASE_URL}/ibus/lines/{line}/stops/{stop}?app_id={self._app_id}&app_key={self._app_key}"
         res = requests.get(url)
+        res.raise_for_status()
         res_json = res.json()
         next_buses = res_json['data']['ibus']
         if len(next_buses) > 0:

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tmb",
-    version="0.0.3",
+    version="0.0.4",
     author="alemuro",
     author_email="hola@aleixmurtra.com",
     description="Library that interacts with TMB API",
