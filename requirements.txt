@@ -7,7 +7,7 @@ ipaddr==2.2.0
 keyring==19.1.0
 lxml==4.4.1
 mock==3.0.5
-numpy==1.17.1
+numpy==1.19.4
 ordereddict==1.1
 simplejson==3.16.0
 usercustomize==1.0.0
