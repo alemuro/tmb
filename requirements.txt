@@ -1,4 +1,4 @@
-cryptography==2.7
+cryptography==3.2.1
 Cython==0.29.13
 pyOpenSSL==19.0.0
 brotli==1.0.7
