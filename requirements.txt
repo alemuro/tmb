@@ -1,7 +1,7 @@
 cryptography==2.7
 Cython==0.29.13
 pyOpenSSL==19.0.0
-brotli==1.0.7
+brotli==1.0.9
 protobuf==3.9.1
 ipaddr==2.2.0
 keyring==19.1.0
