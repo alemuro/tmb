@@ -30,3 +30,4 @@ class IBusTest(unittest.TestCase):
         ibus = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         forecast = ibus.get_stop_forecast('366','V21')
         print(forecast)
+        assert forecast != None
