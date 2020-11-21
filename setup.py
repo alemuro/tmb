@@ -1,13 +1,14 @@
 import setuptools
+import os 
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="tmb",
-    version="0.0.4",
+    version=os.getenv('VERSION'),
     author="alemuro",
-    author_email="hola@aleixmurtra.com",
+    author_email="hello@aleix.cloud",
     description="Library that interacts with TMB API",
     long_description=long_description,
     long_description_content_type="text/markdown",

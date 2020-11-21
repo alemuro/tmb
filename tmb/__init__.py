@@ -1,5 +1,7 @@
 import requests
 import json
+import unittest 
+import os
 
 TMB_BASE_URL = "https://api.tmb.cat/v1"
 
@@ -22,3 +24,10 @@ class IBus():
             next_bus = next_buses[0]
             return next_bus['t-in-min']
         return None
+
+class IBusTest(unittest.TestCase):
+    def test_get_stop_forecast(self):
+        ibus = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        forecast = ibus.get_stop_forecast('366','V21')
+        print(forecast)
+        assert forecast != None
