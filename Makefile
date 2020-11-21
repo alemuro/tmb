@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 build: dist
 
 dist: virtualenv
