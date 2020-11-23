@@ -1,14 +1,10 @@
-![Main](https://github.com/alemuro/tmb/workflows/Main/badge.svg)
+# tmb - Python library for TMB API
 
-# tmb - Library for TMB API
+![build](https://img.shields.io/github/workflow/status/alemuro/tmb/Main) ![downloads](https://img.shields.io/pypi/dm/tmb) ![version](https://img.shields.io/pypi/v/tmb)
 
+Library to interact with the TMB (Transports Metropolitans de Barcelona) API.
 
-Use this library to interact with the TMB (Transports Metropolitans de Barcelona) API.
-
-
-
-## Functionality 
-It supports the following services
+Currently it supports the following TMB services:
 - iBus (get remain minutes for a given stop and line)
 - Planner (Get list of itineraries to go from `from_coords` to `to_coords`)
 
@@ -18,8 +14,6 @@ It supports the following services
 * Login using your personal account.
 * Create a [new application](https://developer.tmb.cat/account/applications), call it as you want.
 * Once created, you will see two variables: `APP_ID` and `APP_KEY`. 
-
-
 
 ## Example
 
