@@ -36,6 +36,16 @@ class Planner():
         self._app_id = app_id
         self._app_key = app_key
 
+    def get_shortest_itinerary(self, from_coords, to_coords):
+        """ Get shortest itinary from `from_coords` to `to_coords` """
+        itineraries = self.get_itineraries(from_coords, to_coords)
+        selected_itinerary = itineraries[0]
+        for itinerary in itineraries:
+            if itinerary['durationInMinutes'] < selected_itinerary['durationInMinutes']:
+                selected_itinerary = itinerary
+
+        return selected_itinerary
+
     def get_itineraries(self, from_coords, to_coords):
         """ Get list of itineraries to go from `from_coords` to `to_coords` """
         now = datetime.now()
@@ -91,9 +101,31 @@ class IBusTest(unittest.TestCase):
         print(forecast)
         assert forecast != None
 
-    def test_get_plan(self):
+    def test_get_itineraries(self):
         origin = "41.3755204,2.1498870"
         planner = Planner(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         plans = planner.get_itineraries(origin, '41.3878951,2.1308587')
-        print("List of selected plans!")
         print(plans)
+        for plan in plans:
+            assert 'overview' in plan
+            assert 'description' in plan
+            assert 'durationInMinutes' in plan
+            assert 'durationInSeconds' in plan
+            assert 'transitTime' in plan
+            assert 'waitingTime' in plan
+            assert 'walkDistance' in plan
+            assert 'transfers' in plan
+
+    def test_get_shortest_itinerary(self):
+        origin = "41.3755204,2.1498870"
+        planner = Planner(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        plan = planner.get_shortest_itinerary(origin, '41.3878951,2.1308587')
+        print(plan)
+        assert 'overview' in plan
+        assert 'description' in plan
+        assert 'durationInMinutes' in plan
+        assert 'durationInSeconds' in plan
+        assert 'transitTime' in plan
+        assert 'waitingTime' in plan
+        assert 'walkDistance' in plan
+        assert 'transfers' in plan
