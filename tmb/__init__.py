@@ -18,7 +18,7 @@ class IBus():
     def get_stop_forecast(self, stop, line):
         """ Get remaining minutes for next bus for a given stop """
         url = f"{TMB_BASE_URL}/ibus/lines/{line}/stops/{stop}?app_id={self._app_id}&app_key={self._app_key}"
-        res = requests.get(url)
+        res = requests.get(url, timeout=10)
         res.raise_for_status()
         res_json = res.json()
         next_buses = res_json['data']['ibus']
@@ -55,7 +55,7 @@ class Planner():
         arriveBy = "false"
         mode = "TRANSIT,WALK"
         url = f"{TMB_BASE_URL}/planner/plan?fromPlace={from_coords}&toPlace={to_coords}&date={d}&time={time}&arriveBy={arriveBy}&mode={mode}&app_id={self._app_id}&app_key={self._app_key}"
-        res = requests.get(url)
+        res = requests.get(url, timeout=10)
         res.raise_for_status()
         res_json = res.json()
 
