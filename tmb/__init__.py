@@ -7,6 +7,84 @@ from datetime import datetime
 TMB_BASE_URL = "https://api.tmb.cat/v1"
 
 
+class TMB():
+    """ Class that gets generic data from TMB, like bus lines, bus stops, and so on"""
+
+    def __init__(self, app_id, app_key):
+        """ Initializes the class using the APP ID and APP KEY """
+        self._app_id = app_id
+        self._app_key = app_key
+
+    def get_bus_lines(self):
+        url = f"{TMB_BASE_URL}/transit/linies/bus?app_id={self._app_id}&app_key={self._app_key}"
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+
+        bus_lines = []
+
+        for bus_line in res_json['features']:
+            bus_lines.append({
+                "code": bus_line['properties']['CODI_LINIA'],
+                "name": bus_line['properties']['NOM_LINIA'],
+                "description": f"{bus_line['properties']['ORIGEN_LINIA']} / {bus_line['properties']['DESTI_LINIA']}",
+            })
+
+        bus_lines.sort(key=lambda x:x['name'])
+        return bus_lines
+
+    def get_metro_lines(self):
+        url = f"{TMB_BASE_URL}/transit/linies/metro?app_id={self._app_id}&app_key={self._app_key}"
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+
+        metro_lines = []
+
+        for metro_line in res_json['features']:
+            metro_lines.append({
+                "code": metro_line['properties']['CODI_LINIA'],
+                "name": metro_line['properties']['NOM_LINIA'],
+                "description": f"{metro_line['properties']['ORIGEN_LINIA']} / {metro_line['properties']['DESTI_LINIA']}",
+            })
+
+        metro_lines.sort(key=lambda x:x['name'])
+        return metro_lines
+
+    def get_bus_stops(self, line):
+        # Get bus lines
+        url = f"{TMB_BASE_URL}/transit/linies/bus?app_id={self._app_id}&app_key={self._app_key}"
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+
+        line_code = -1
+        for bus_line in res_json['features']:
+            if bus_line['properties']['NOM_LINIA'] == line:
+                line_code = bus_line['properties']['CODI_LINIA']
+                break
+
+        if line_code == -1:
+            raise Exception("Invalid line!")
+
+        # Get bus stops
+        url = f"{TMB_BASE_URL}/transit/linies/bus/{line_code}/parades?app_id={self._app_id}&app_key={self._app_key}"
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+
+        bus_stops = []
+        for stop in res_json['features']:
+            bus_stops.append({
+                "code": stop['properties']['CODI_PARADA'],
+                "line": stop['properties']['NOM_LINIA'],
+                "name": stop['properties']['NOM_PARADA'],
+                "description": stop['properties']['ADRECA'],
+            })
+
+        return bus_stops
+
+
 class IBus():
     """ Class that interacts with TMB iBus service """
 
@@ -94,18 +172,45 @@ class Planner():
         return plans
 
 
+class TMBTest(unittest.TestCase):
+    def test_get_bus_lines(self):
+        tmb = TMB(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        bus_lines = tmb.get_bus_lines()
+        print(bus_lines)
+        for line in bus_lines:
+            assert "code" in line
+            assert "name" in line
+            assert "description" in line
+
+    def test_get_metro_lines(self):
+        tmb = TMB(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        metro_lines = tmb.get_metro_lines()
+        print(metro_lines)
+        for line in metro_lines:
+            assert "code" in line
+            assert "name" in line
+            assert "description" in line
+
+    def test_get_bus_stops(self):
+        tmb = TMB(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        bus_stops = tmb.get_bus_stops("V25")
+        print(bus_stops)
+        for stop in bus_stops:
+            assert "code" in stop
+            assert "name" in stop
+            assert "description" in stop
+
+
 class IBusTest(unittest.TestCase):
     def test_get_stop_forecast(self):
         ibus = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         forecast = ibus.get_stop_forecast('366', 'V21')
-        print(forecast)
         assert forecast != None
 
     def test_get_itineraries(self):
         origin = "41.3755204,2.1498870"
         planner = Planner(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         plans = planner.get_itineraries(origin, '41.3878951,2.1308587')
-        print(plans)
         for plan in plans:
             assert 'overview' in plan
             assert 'description' in plan
@@ -120,7 +225,6 @@ class IBusTest(unittest.TestCase):
         origin = "41.3755204,2.1498870"
         planner = Planner(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         plan = planner.get_shortest_itinerary(origin, '41.3878951,2.1308587')
-        print(plan)
         assert 'overview' in plan
         assert 'description' in plan
         assert 'durationInMinutes' in plan
