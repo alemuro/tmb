@@ -6,14 +6,25 @@ from datetime import datetime
 
 TMB_BASE_URL = "https://api.tmb.cat/v1"
 
-
-class TMB():
-    """ Class that gets generic data from TMB, like bus lines, bus stops, and so on"""
+class IBus():
+    """ Class that interacts with TMB iBus service """
 
     def __init__(self, app_id, app_key):
         """ Initializes the class using the APP ID and APP KEY """
         self._app_id = app_id
         self._app_key = app_key
+
+    def get_stop_forecast(self, stop, line):
+        """ Get remaining minutes for next bus for a given stop """
+        url = f"{TMB_BASE_URL}/ibus/lines/{line}/stops/{stop}?app_id={self._app_id}&app_key={self._app_key}"
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+        next_buses = res_json['data']['ibus']
+        if len(next_buses) > 0:
+            next_bus = next_buses[0]
+            return next_bus['t-in-min']
+        return None
 
     def get_bus_lines(self):
         url = f"{TMB_BASE_URL}/transit/linies/bus?app_id={self._app_id}&app_key={self._app_key}"
@@ -32,24 +43,6 @@ class TMB():
 
         bus_lines.sort(key=lambda x:x['name'])
         return bus_lines
-
-    def get_metro_lines(self):
-        url = f"{TMB_BASE_URL}/transit/linies/metro?app_id={self._app_id}&app_key={self._app_key}"
-        res = requests.get(url, timeout=10)
-        res.raise_for_status()
-        res_json = res.json()
-
-        metro_lines = []
-
-        for metro_line in res_json['features']:
-            metro_lines.append({
-                "code": metro_line['properties']['CODI_LINIA'],
-                "name": metro_line['properties']['NOM_LINIA'],
-                "description": f"{metro_line['properties']['ORIGEN_LINIA']} / {metro_line['properties']['DESTI_LINIA']}",
-            })
-
-        metro_lines.sort(key=lambda x:x['name'])
-        return metro_lines
 
     def get_bus_stops(self, line):
         # Get bus lines
@@ -82,28 +75,9 @@ class TMB():
                 "description": stop['properties']['ADRECA'],
             })
 
+        bus_stops.sort(key=lambda x:x['code'])
+
         return bus_stops
-
-
-class IBus():
-    """ Class that interacts with TMB iBus service """
-
-    def __init__(self, app_id, app_key):
-        """ Initializes the class using the APP ID and APP KEY """
-        self._app_id = app_id
-        self._app_key = app_key
-
-    def get_stop_forecast(self, stop, line):
-        """ Get remaining minutes for next bus for a given stop """
-        url = f"{TMB_BASE_URL}/ibus/lines/{line}/stops/{stop}?app_id={self._app_id}&app_key={self._app_key}"
-        res = requests.get(url, timeout=10)
-        res.raise_for_status()
-        res_json = res.json()
-        next_buses = res_json['data']['ibus']
-        if len(next_buses) > 0:
-            next_bus = next_buses[0]
-            return next_bus['t-in-min']
-        return None
 
 
 class Planner():
@@ -172,35 +146,6 @@ class Planner():
         return plans
 
 
-class TMBTest(unittest.TestCase):
-    def test_get_bus_lines(self):
-        tmb = TMB(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
-        bus_lines = tmb.get_bus_lines()
-        print(bus_lines)
-        for line in bus_lines:
-            assert "code" in line
-            assert "name" in line
-            assert "description" in line
-
-    def test_get_metro_lines(self):
-        tmb = TMB(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
-        metro_lines = tmb.get_metro_lines()
-        print(metro_lines)
-        for line in metro_lines:
-            assert "code" in line
-            assert "name" in line
-            assert "description" in line
-
-    def test_get_bus_stops(self):
-        tmb = TMB(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
-        bus_stops = tmb.get_bus_stops("V25")
-        print(bus_stops)
-        for stop in bus_stops:
-            assert "code" in stop
-            assert "name" in stop
-            assert "description" in stop
-
-
 class IBusTest(unittest.TestCase):
     def test_get_stop_forecast(self):
         ibus = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
@@ -233,3 +178,21 @@ class IBusTest(unittest.TestCase):
         assert 'waitingTime' in plan
         assert 'walkDistance' in plan
         assert 'transfers' in plan
+
+    def test_get_bus_lines(self):
+        tmb = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        bus_lines = tmb.get_bus_lines()
+        print(bus_lines)
+        for line in bus_lines:
+            assert "code" in line
+            assert "name" in line
+            assert "description" in line
+
+    def test_get_bus_stops(self):
+        tmb = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        bus_stops = tmb.get_bus_stops("V25")
+        print(bus_stops)
+        for stop in bus_stops:
+            assert "code" in stop
+            assert "name" in stop
+            assert "description" in stop
