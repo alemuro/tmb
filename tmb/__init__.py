@@ -6,7 +6,6 @@ from datetime import datetime
 
 TMB_BASE_URL = "https://api.tmb.cat/v1"
 
-
 class IBus():
     """ Class that interacts with TMB iBus service """
 
@@ -15,17 +14,77 @@ class IBus():
         self._app_id = app_id
         self._app_key = app_key
 
-    def get_stop_forecast(self, stop, line):
+    def __get_url(self, path):
+        url = f"{TMB_BASE_URL}/{path}?app_id={self._app_id}&app_key={self._app_key}"
+        return url
+
+    def get_stop_forecast(self, stop, line = ""):
         """ Get remaining minutes for next bus for a given stop """
-        url = f"{TMB_BASE_URL}/ibus/lines/{line}/stops/{stop}?app_id={self._app_id}&app_key={self._app_key}"
+
+        url = self.__get_url(f"ibus/stops/{stop}")
+        if line != "":
+            url = self.__get_url(f"ibus/lines/{line}/stops/{stop}")
+
         res = requests.get(url, timeout=10)
         res.raise_for_status()
         res_json = res.json()
         next_buses = res_json['data']['ibus']
         if len(next_buses) > 0:
-            next_bus = next_buses[0]
-            return next_bus['t-in-min']
+            return next_buses
         return None
+
+    def get_bus_lines(self):
+        url = self.__get_url("transit/linies/bus")
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+
+        bus_lines = []
+
+        for bus_line in res_json['features']:
+            bus_lines.append({
+                "code": bus_line['properties']['CODI_LINIA'],
+                "name": bus_line['properties']['NOM_LINIA'],
+                "description": f"{bus_line['properties']['ORIGEN_LINIA']} / {bus_line['properties']['DESTI_LINIA']}",
+            })
+
+        bus_lines.sort(key=lambda x:x['name'])
+        return bus_lines
+
+    def get_bus_stops(self, line):
+        # Get bus lines
+        url = self.__get_url("transit/linies/bus")
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+
+        line_code = -1
+        for bus_line in res_json['features']:
+            if bus_line['properties']['NOM_LINIA'] == line:
+                line_code = bus_line['properties']['CODI_LINIA']
+                break
+
+        if line_code == -1:
+            raise Exception("Invalid line!")
+
+        # Get bus stops
+        url = self.__get_url(f"transit/linies/bus/{line_code}/parades")
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        res_json = res.json()
+
+        bus_stops = []
+        for stop in res_json['features']:
+            bus_stops.append({
+                "code": stop['properties']['CODI_PARADA'],
+                "line": stop['properties']['NOM_LINIA'],
+                "name": stop['properties']['NOM_PARADA'],
+                "description": stop['properties']['ADRECA'],
+            })
+
+        bus_stops.sort(key=lambda x:x['code'])
+
+        return bus_stops
 
 
 class Planner():
@@ -97,15 +156,31 @@ class Planner():
 class IBusTest(unittest.TestCase):
     def test_get_stop_forecast(self):
         ibus = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
-        forecast = ibus.get_stop_forecast('366', 'V21')
-        print(forecast)
-        assert forecast != None
+        stops = ibus.get_stop_forecast('366', 'V21')
+        assert len(stops) == 1
+        assert stops != None
+        for stop in stops:
+            assert 'routeId' in stop
+            assert 't-in-min' in stop
+            assert 't-in-s' in stop
+            assert 'text-ca' in stop
+
+    def test_get_stop_all_lines_forecast(self):
+        ibus = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        stops = ibus.get_stop_forecast('366')
+        assert len(stops) == 2
+        assert stops != None
+        for stop in stops:
+            assert 'line' in stop
+            assert 'routeId' in stop
+            assert 't-in-min' in stop
+            assert 't-in-s' in stop
+            assert 'text-ca' in stop
 
     def test_get_itineraries(self):
         origin = "41.3755204,2.1498870"
         planner = Planner(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         plans = planner.get_itineraries(origin, '41.3878951,2.1308587')
-        print(plans)
         for plan in plans:
             assert 'overview' in plan
             assert 'description' in plan
@@ -120,7 +195,6 @@ class IBusTest(unittest.TestCase):
         origin = "41.3755204,2.1498870"
         planner = Planner(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         plan = planner.get_shortest_itinerary(origin, '41.3878951,2.1308587')
-        print(plan)
         assert 'overview' in plan
         assert 'description' in plan
         assert 'durationInMinutes' in plan
@@ -129,3 +203,19 @@ class IBusTest(unittest.TestCase):
         assert 'waitingTime' in plan
         assert 'walkDistance' in plan
         assert 'transfers' in plan
+
+    def test_get_bus_lines(self):
+        tmb = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        bus_lines = tmb.get_bus_lines()
+        for line in bus_lines:
+            assert "code" in line
+            assert "name" in line
+            assert "description" in line
+
+    def test_get_bus_stops(self):
+        tmb = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        bus_stops = tmb.get_bus_stops("V25")
+        for stop in bus_stops:
+            assert "code" in stop
+            assert "name" in stop
+            assert "description" in stop
