@@ -51,36 +51,41 @@ class IBus():
         bus_lines.sort(key=lambda x:x['name'])
         return bus_lines
 
-    def get_bus_stops(self, line):
+    def get_bus_stops(self, line = ""):
         # Get bus lines
-        url = self.__get_url("transit/linies/bus")
-        res = requests.get(url, timeout=10)
-        res.raise_for_status()
-        res_json = res.json()
+        if line != "":
+            url = self.__get_url("transit/linies/bus")
+            res = requests.get(url, timeout=10)
+            res.raise_for_status()
+            res_json = res.json()
 
-        line_code = -1
-        for bus_line in res_json['features']:
-            if bus_line['properties']['NOM_LINIA'] == line:
-                line_code = bus_line['properties']['CODI_LINIA']
-                break
+            line_code = -1
+            for bus_line in res_json['features']:
+                if bus_line['properties']['NOM_LINIA'] == line:
+                    line_code = bus_line['properties']['CODI_LINIA']
+                    break
 
-        if line_code == -1:
-            raise Exception("Invalid line!")
+            if line_code == -1:
+                raise Exception("Invalid line!")
 
         # Get bus stops
-        url = self.__get_url(f"transit/linies/bus/{line_code}/parades")
+        url = self.__get_url("transit/parades")
+        if line != "":
+            url = self.__get_url(f"transit/linies/bus/{line_code}/parades")
         res = requests.get(url, timeout=10)
         res.raise_for_status()
         res_json = res.json()
 
         bus_stops = []
         for stop in res_json['features']:
-            bus_stops.append({
+            stop_object = {
                 "code": stop['properties']['CODI_PARADA'],
-                "line": stop['properties']['NOM_LINIA'],
                 "name": stop['properties']['NOM_PARADA'],
                 "description": stop['properties']['ADRECA'],
-            })
+            }
+            if line != "":
+                stop_object["line"] = stop['properties']['NOM_LINIA']
+            bus_stops.append(stop_object)
 
         bus_stops.sort(key=lambda x:x['code'])
 
@@ -215,6 +220,15 @@ class IBusTest(unittest.TestCase):
     def test_get_bus_stops(self):
         tmb = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
         bus_stops = tmb.get_bus_stops("V25")
+        for stop in bus_stops:
+            assert "code" in stop
+            assert "name" in stop
+            assert "description" in stop
+
+    def test_get_bus_all_lines_stops(self):
+        tmb = IBus(os.getenv('IBUS_ID'), os.getenv('IBUS_KEY'))
+        bus_stops = tmb.get_bus_stops()
+        print(bus_stops)
         for stop in bus_stops:
             assert "code" in stop
             assert "name" in stop
